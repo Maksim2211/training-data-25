@@ -1,10 +1,14 @@
+/*
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+*/
+
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Клас BasicDataOperationUsingMap реалізує операції з колекціями типу Map для зберігання пар ключ-значення.
@@ -30,22 +34,6 @@ public class BasicDataOperationUsingMap {
 
     private Hashtable<Python, String> hashtable;
     private LinkedHashMap<Python, String> linkedHashMap;
-
-    /**
-     * Компаратор для сортування Map.Entry за значеннями String.
-     * Використовує метод String.compareTo() для порівняння імен власників.
-     */
-    static class OwnerValueComparator implements Comparator<Map.Entry<Python, String>> {
-        @Override
-        public int compare(Map.Entry<Python, String> e1, Map.Entry<Python, String> e2) {
-            String v1 = e1.getValue();
-            String v2 = e2.getValue();
-            if (v1 == null && v2 == null) return 0;
-            if (v1 == null) return -1;
-            if (v2 == null) return 1;
-            return v1.compareTo(v2);
-        }
-    }
 
     /**
      * Внутрішній клас Python для зберігання інформації про пітона.
@@ -248,9 +236,9 @@ public class BasicDataOperationUsingMap {
         System.out.println("\n=== Пари ключ-значення в Hashtable ===");
         long timeStart = System.nanoTime();
 
-        for (Map.Entry<Python, String> entry : hashtable.entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-        }
+        hashtable.entrySet().forEach(entry ->
+            System.out.println("  " + entry.getKey() + " -> " + entry.getValue())
+        );
 
         PerformanceTracker.displayOperationTime(timeStart, "виведення пари ключ-значення в Hashtable");
     }
@@ -263,18 +251,14 @@ public class BasicDataOperationUsingMap {
     private void sortHashtable() {
         long timeStart = System.nanoTime();
 
-        // Створюємо список ключів і сортуємо за природним порядком Python
-        List<Python> sortedKeys = new ArrayList<>(hashtable.keySet());
-        Collections.sort(sortedKeys);
-        
-        // Створюємо нову Hashtable з відсортованими ключами
-        Hashtable<Python, String> sortedHashtable = new Hashtable<>();
-        for (Python key : sortedKeys) {
-            sortedHashtable.put(key, hashtable.get(key));
-        }
-        
-        // Перезаписуємо оригінальну hashtable
-        hashtable = sortedHashtable;
+        hashtable = hashtable.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        Hashtable::new
+                ));
 
         PerformanceTracker.displayOperationTime(timeStart, "сортування Hashtable за ключами");
     }
@@ -287,18 +271,14 @@ public class BasicDataOperationUsingMap {
     private void sortLinkedHashMap() {
         long timeStart = System.nanoTime();
 
-        // Створюємо список ключів і сортуємо за природним порядком Python
-        List<Python> sortedKeys = new ArrayList<>(linkedHashMap.keySet());
-        Collections.sort(sortedKeys);
-        
-        // Створюємо нову LinkedHashMap з відсортованими ключами
-        LinkedHashMap<Python, String> sortedLinkedHashMap = new LinkedHashMap<>();
-        for (Python key : sortedKeys) {
-            sortedLinkedHashMap.put(key, linkedHashMap.get(key));
-        }
-        
-        // Перезаписуємо оригінальну linkedHashMap
-        linkedHashMap = sortedLinkedHashMap;
+        linkedHashMap = linkedHashMap.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
 
         PerformanceTracker.displayOperationTime(timeStart, "сортування LinkedHashMap за ключами");
     }
@@ -329,25 +309,18 @@ public class BasicDataOperationUsingMap {
     void findByValueInHashtable() {
         long timeStart = System.nanoTime();
 
-        // Створюємо список Entry та сортуємо за значеннями
-        List<Map.Entry<Python, String>> entries = new ArrayList<>(hashtable.entrySet());
-        OwnerValueComparator comparator = new OwnerValueComparator();
-        Collections.sort(entries, comparator);
+        boolean found = hashtable.entrySet().stream()
+                .anyMatch(entry -> entry.getValue() != null && entry.getValue().equals(VALUE_TO_SEARCH_AND_DELETE));
 
-        // Створюємо тимчасовий Entry для пошуку
-        Map.Entry<Python, String> searchEntry = new Map.Entry<Python, String>() {
-            public Python getKey() { return null; }
-            public String getValue() { return VALUE_TO_SEARCH_AND_DELETE; }
-            public String setValue(String value) { return null; }
-        };
+        PerformanceTracker.displayOperationTime(timeStart, "пошук за значенням в Hashtable");
 
-        int position = Collections.binarySearch(entries, searchEntry, comparator);
-
-        PerformanceTracker.displayOperationTime(timeStart, "бінарний пошук за значенням в Hashtable");
-
-        if (position >= 0) {
-            Map.Entry<Python, String> foundEntry = entries.get(position);
-            System.out.println("Власника '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Python: " + foundEntry.getKey());
+        if (found) {
+            String owner = hashtable.entrySet().stream()
+                    .filter(entry -> entry.getValue() != null && entry.getValue().equals(VALUE_TO_SEARCH_AND_DELETE))
+                    .map(entry -> entry.getKey().toString())
+                    .findFirst()
+                    .orElse("");
+            System.out.println("Власника '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Python: " + owner);
         } else {
             System.out.println("Власник '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутній в Hashtable.");
         }
@@ -389,20 +362,16 @@ public class BasicDataOperationUsingMap {
     void removeByValueFromHashtable() {
         long timeStart = System.nanoTime();
 
-        List<Python> keysToRemove = new ArrayList<>();
-        for (Map.Entry<Python, String> entry : hashtable.entrySet()) {
-            if (entry.getValue() != null && entry.getValue().equals(VALUE_TO_SEARCH_AND_DELETE)) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
+        List<Python> keysToRemove = hashtable.entrySet().stream()
+                .filter(entry -> entry.getValue() != null && entry.getValue().equals(VALUE_TO_SEARCH_AND_DELETE))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
         
-        for (Python key : keysToRemove) {
-            hashtable.remove(key);
-        }
+        keysToRemove.forEach(hashtable::remove);
 
         PerformanceTracker.displayOperationTime(timeStart, "видалення за значенням з Hashtable");
 
-        System.out.println("Видалено " + keysToRemove.size() + " записів з власником '" + VALUE_TO_SEARCH_AND_DELETE + "'");
+        System.out.println("Видалено " + keysToRemove.size() + " записiв з власником '" + VALUE_TO_SEARCH_AND_DELETE + "'");
     }
 
     // ===== Методи для LinkedHashMap =====
@@ -415,9 +384,9 @@ public class BasicDataOperationUsingMap {
         System.out.println("\n=== Пари ключ-значення в LinkedHashMap ===");
 
         long timeStart = System.nanoTime();
-        for (Map.Entry<Python, String> entry : linkedHashMap.entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-        }
+        linkedHashMap.entrySet().forEach(entry ->
+            System.out.println("  " + entry.getKey() + " -> " + entry.getValue())
+        );
 
         PerformanceTracker.displayOperationTime(timeStart, "виведення пар ключ-значення в LinkedHashMap");
     }
@@ -448,25 +417,18 @@ public class BasicDataOperationUsingMap {
     void findByValueInLinkedHashMap() {
         long timeStart = System.nanoTime();
 
-        // Створюємо список Entry та сортуємо за значеннями
-        List<Map.Entry<Python, String>> entries = new ArrayList<>(linkedHashMap.entrySet());
-        OwnerValueComparator comparator = new OwnerValueComparator();
-        Collections.sort(entries, comparator);
+        boolean found = linkedHashMap.entrySet().stream()
+                .anyMatch(entry -> entry.getValue() != null && entry.getValue().equals(VALUE_TO_SEARCH_AND_DELETE));
 
-        // Створюємо тимчасовий Entry для пошуку
-        Map.Entry<Python, String> searchEntry = new Map.Entry<Python, String>() {
-            public Python getKey() { return null; }
-            public String getValue() { return VALUE_TO_SEARCH_AND_DELETE; }
-            public String setValue(String value) { return null; }
-        };
+        PerformanceTracker.displayOperationTime(timeStart, "пошук за значенням в LinkedHashMap");
 
-        int position = Collections.binarySearch(entries, searchEntry, comparator);
-
-        PerformanceTracker.displayOperationTime(timeStart, "бінарний пошук за значенням в LinkedHashMap");
-
-        if (position >= 0) {
-            Map.Entry<Python, String> foundEntry = entries.get(position);
-            System.out.println("Власника '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Python: " + foundEntry.getKey());
+        if (found) {
+            String owner = linkedHashMap.entrySet().stream()
+                    .filter(entry -> entry.getValue() != null && entry.getValue().equals(VALUE_TO_SEARCH_AND_DELETE))
+                    .map(entry -> entry.getKey().toString())
+                    .findFirst()
+                    .orElse("");
+            System.out.println("Власника '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Python: " + owner);
         } else {
             System.out.println("Власник '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутній в LinkedHashMap.");
         }
@@ -508,20 +470,16 @@ public class BasicDataOperationUsingMap {
     void removeByValueFromLinkedHashMap() {
         long timeStart = System.nanoTime();
 
-        List<Python> keysToRemove = new ArrayList<>();
-        for (Map.Entry<Python, String> entry : linkedHashMap.entrySet()) {
-            if (entry.getValue() != null && entry.getValue().equals(VALUE_TO_SEARCH_AND_DELETE)) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
+        List<Python> keysToRemove = linkedHashMap.entrySet().stream()
+                .filter(entry -> entry.getValue() != null && entry.getValue().equals(VALUE_TO_SEARCH_AND_DELETE))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
         
-        for (Python key : keysToRemove) {
-            linkedHashMap.remove(key);
-        }
+        keysToRemove.forEach(linkedHashMap::remove);
 
         PerformanceTracker.displayOperationTime(timeStart, "видалення за значенням з LinkedHashMap");
 
-        System.out.println("Видалено " + keysToRemove.size() + " записів з власником '" + VALUE_TO_SEARCH_AND_DELETE + "'");
+        System.out.println("Видалено " + keysToRemove.size() + " записiв з власником '" + VALUE_TO_SEARCH_AND_DELETE + "'");
     }
 
     /**
