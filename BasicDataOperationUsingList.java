@@ -1,8 +1,9 @@
 //*import java.time.Character; *//
 import java.util.LinkedList;
 import java.util.Arrays;
-import java.util.Collections;
+//* import java.util.Collections; *//
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Клас BasicDataOperationUsingList реалізує операції з колекціями типу LinkedList для даних Character.
@@ -61,7 +62,7 @@ public class BasicDataOperationUsingList {
         locateMinMaxInArray();
 
         // зберігаємо відсортований масив до окремого файлу
-        DataFileHandler.writeArrayToFile(charArray, BasicDataOperation.PATH_TO_DATA_FILE + ".sorted");
+        DataFileHandler.writeArrayToFile(BasicDataOperation.PATH_TO_DATA_FILE + ".sorted", charArray);
     }
 
     /**
@@ -71,7 +72,9 @@ public class BasicDataOperationUsingList {
     void performArraySorting() {
         long timeStart = System.nanoTime();
 
-        Arrays.sort(charArray);
+        charArray = Arrays.stream(charArray)
+                .sorted()
+                .toArray(Character[]::new);
 
         PerformanceTracker.displayOperationTime(timeStart, "упорядкування масиву дати i часу");
     }
@@ -82,7 +85,11 @@ public class BasicDataOperationUsingList {
     void findInArray() {
         long timeStart = System.nanoTime();
 
-        int position = Arrays.binarySearch(this.charArray, CharacterValueToSearch);
+        int position = Arrays.stream(charArray)
+                .map(Arrays.asList(charArray)::indexOf)
+                .filter(i -> CharacterValueToSearch.equals(charArray[i]))
+                .findFirst()
+                .orElse(-1);
 
         PerformanceTracker.displayOperationTime(timeStart, "пошук Character");
 
@@ -104,17 +111,8 @@ public class BasicDataOperationUsingList {
 
         long timeStart = System.nanoTime();
 
-        Character minValue = charArray[0];
-        Character maxValue = charArray[0];
-
-        for (Character currentchar : charArray) {
-            if (currentchar.charValue() < minValue.charValue()) {
-                minValue = currentchar;
-            }
-            if (currentchar.charValue() > maxValue.charValue()) {
-                maxValue = currentchar;
-            }
-        }
+        Character minValue = Arrays.stream(charArray).min(Character::compareTo).orElse(null);
+        Character maxValue = Arrays.stream(charArray).max(Character::compareTo).orElse(null);
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмальної i максимальної дати в масивi");
 
@@ -128,7 +126,11 @@ public class BasicDataOperationUsingList {
     void findInList() {
         long timeStart = System.nanoTime();
 
-        int position = Collections.binarySearch(this.charList, CharacterValueToSearch);
+        int position = (int) charList.stream()
+                .map(charList::indexOf)
+                .filter(i -> CharacterValueToSearch.equals(charList.get(i)))
+                .findFirst()
+                .orElse(-1);
 
         PerformanceTracker.displayOperationTime(timeStart, "пошук елемента в List дати i часу");        
 
@@ -150,8 +152,8 @@ public class BasicDataOperationUsingList {
 
         long timeStart = System.nanoTime();
 
-        Character minValue = Collections.min(charList);
-        Character maxValue = Collections.max(charList);
+        Character minValue = charList.stream().min(Character::compareTo).orElse(null);
+        Character maxValue = charList.stream().max(Character::compareTo).orElse(null);
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмальної i максимальної дати в List");
 
@@ -166,7 +168,9 @@ public class BasicDataOperationUsingList {
     void sortList() {
         long timeStart = System.nanoTime();
 
-        Collections.sort(charList);
+        charList = charList.stream()
+                .sorted()
+                .collect(Collectors.toList());
 
         PerformanceTracker.displayOperationTime(timeStart, "упорядкування LinkedList дати i часу");
     }

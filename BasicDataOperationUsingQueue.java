@@ -1,7 +1,7 @@
 /*import java.time.Character;*/
 import java.util.Queue;
 import java.util.Arrays;
-import java.util.Collections;
+//* import java.util.Collections; *//
 import java.util.PriorityQueue;
 
 /**
@@ -57,7 +57,7 @@ public class BasicDataOperationUsingQueue {
         locateMinMaxInArray();
 
         // зберігаємо відсортований масив до файлу
-        DataFileHandler.writeArrayToFile(charArray, BasicDataOperation.PATH_TO_DATA_FILE + ".sorted");
+        DataFileHandler.writeArrayToFile(BasicDataOperation.PATH_TO_DATA_FILE + ".sorted", charArray);
     }
 
     /**
@@ -68,7 +68,9 @@ public class BasicDataOperationUsingQueue {
         // вимірюємо тривалість упорядкування масиву дати та часу
         long timeStart = System.nanoTime();
 
-        Arrays.sort(charArray);
+        charArray = Arrays.stream(charArray)
+                .sorted()
+                .toArray(Character[]::new);
 
         PerformanceTracker.displayOperationTime(timeStart, "упорядкування масиву дати i часу");
     }
@@ -80,7 +82,11 @@ public class BasicDataOperationUsingQueue {
         // відстежуємо час виконання пошуку в масиві
         long timeStart = System.nanoTime();
         
-        int position = Arrays.binarySearch(this.charArray, CharacterValueToSearch);
+        int position = (int) Arrays.stream(charArray)
+                .map(Arrays.asList(charArray)::indexOf)
+                .filter(i -> CharacterValueToSearch.equals(charArray[i]))
+                .findFirst()
+                .orElse(-1);
         
         PerformanceTracker.displayOperationTime(timeStart, "пошук елемента в масивi дати i часу");
 
@@ -103,17 +109,8 @@ public class BasicDataOperationUsingQueue {
         // відстежуємо час на визначення граничних значень
         long timeStart = System.nanoTime();
 
-        Character minValue = charArray[0];
-        Character maxValue = charArray[0];
-
-        for (Character currentchar : charArray) {
-            if (currentchar.charValue() < minValue.charValue()) {
-                minValue = currentchar;
-            }
-            if (currentchar.charValue() > maxValue.charValue()) {
-                maxValue = currentchar;
-            }
-        }
+        Character minValue = Arrays.stream(charArray).min(Character::compareTo).orElse(null);
+        Character maxValue = Arrays.stream(charArray).max(Character::compareTo).orElse(null);
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмальної i максимальної дати в масивi");
 
@@ -128,7 +125,8 @@ public class BasicDataOperationUsingQueue {
         // вимірюємо час пошуку в черзі
         long timeStart = System.nanoTime();
 
-        boolean elementExists = this.charQueue.contains(CharacterValueToSearch);
+        boolean elementExists = charQueue.stream()
+                .anyMatch(character -> character.equals(CharacterValueToSearch));
 
         PerformanceTracker.displayOperationTime(timeStart, "пошук елемента в Queue дати i часу");
 
@@ -151,8 +149,12 @@ public class BasicDataOperationUsingQueue {
         // відстежуємо час пошуку граничних значень
         long timeStart = System.nanoTime();
 
-        Character minValue = Collections.min(charQueue);
-        Character maxValue = Collections.max(charQueue);
+        Character minValue = charQueue.stream()
+                .min(Character::compareTo)
+                .orElse(null);
+        Character maxValue = charQueue.stream()
+                .max(Character::compareTo)
+                .orElse(null);
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмальної i максимальної дати в Queue");
 

@@ -1,6 +1,6 @@
 /*import java.time.Character;*/
 import java.util.Arrays;
-import java.util.Collections;
+//* import java.util.Collections; *//
 import java.util.HashSet;
 import java.util.Set;
 
@@ -56,7 +56,7 @@ public class BasicDataOperationUsingSet {
         locateMinMaxInArray();
 
         // зберігаємо відсортований масив до файлу
-        DataFileHandler.writeArrayToFile(charArray, BasicDataOperation.PATH_TO_DATA_FILE + ".sorted");
+        DataFileHandler.writeArrayToFile(BasicDataOperation.PATH_TO_DATA_FILE + ".sorted", charArray);
     }
 
     /**
@@ -66,7 +66,9 @@ public class BasicDataOperationUsingSet {
     private void performArraySorting() {
         long timeStart = System.nanoTime();
 
-        Arrays.sort(charArray);
+        charArray = Arrays.stream(charArray)
+                .sorted()
+                .toArray(Character[]::new);
 
         PerformanceTracker.displayOperationTime(timeStart, "упорядкування масиву дати i часу");
     }
@@ -77,7 +79,11 @@ public class BasicDataOperationUsingSet {
     private void findInArray() {
         long timeStart = System.nanoTime();
 
-        int position = Arrays.binarySearch(this.charArray, CharacterValueToSearch);
+        int position = (int) Arrays.stream(charArray)
+                .map(Arrays.asList(charArray)::indexOf)
+                .filter(i -> CharacterValueToSearch.equals(charArray[i]))
+                .findFirst()
+                .orElse(-1);
 
         PerformanceTracker.displayOperationTime(timeStart, "пошук елемента в масивi дати i часу");
 
@@ -99,17 +105,8 @@ public class BasicDataOperationUsingSet {
 
         long timeStart = System.nanoTime();
 
-        Character minValue = charArray[0];
-        Character maxValue = charArray[0];
-
-        for (Character currentchar : charArray) {
-            if (currentchar.charValue() < minValue.charValue()) {
-                minValue = currentchar;
-            }
-            if (currentchar.charValue() > maxValue.charValue()) {
-                maxValue = currentchar;
-            }
-        }
+        Character minValue = Arrays.stream(charArray).min(Character::compareTo).orElse(null);
+        Character maxValue = Arrays.stream(charArray).max(Character::compareTo).orElse(null);
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмальної i максимальної дати в масивi");
 
@@ -123,7 +120,8 @@ public class BasicDataOperationUsingSet {
     private void findInSet() {
         long timeStart = System.nanoTime();
 
-        boolean elementExists = this.charSet.contains(CharacterValueToSearch);
+        boolean elementExists = charSet.stream()
+                .anyMatch(character -> character.equals(CharacterValueToSearch));
 
         PerformanceTracker.displayOperationTime(timeStart, "пошук елемента в HashSet дати i часу");
 
@@ -145,8 +143,12 @@ public class BasicDataOperationUsingSet {
 
         long timeStart = System.nanoTime();
 
-        Character minValue = Collections.min(charSet);
-        Character maxValue = Collections.max(charSet);
+        Character minValue = charSet.stream()
+                .min(Character::compareTo)
+                .orElse(null);
+        Character maxValue = charSet.stream()
+                .max(Character::compareTo)
+                .orElse(null);
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмальної i максимальної дати в HashSet");
 
@@ -161,13 +163,8 @@ public class BasicDataOperationUsingSet {
         System.out.println("Кiлькiсть елементiв в масивi: " + charArray.length);
         System.out.println("Кiлькiсть елементiв в HashSet: " + charSet.size());
 
-        boolean allElementsPresent = true;
-        for (Character charElement : charArray) {
-            if (!charSet.contains(charElement)) {
-                allElementsPresent = false;
-                break;
-            }
-        }
+        boolean allElementsPresent = Arrays.stream(charArray)
+                .allMatch(charSet::contains);
 
         if (allElementsPresent) {
             System.out.println("Всi елементи масиву наявні в HashSet.");
